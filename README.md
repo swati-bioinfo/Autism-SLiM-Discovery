@@ -8,13 +8,13 @@ length-matched controls (n=251 non-SFARI Swiss-Prot human proteins).
 
 ## Pipeline
 
-1. **Data Acquisition** — SFARI Gene List + UniProt Swiss-Prot sequences
-2. **Quality Control** — Sequence validation, length distribution, AA composition
-3. **IDR Prediction** — IUPred3 REST API (score > 0.5, min 15 AA)
-4. **Control Set** — Length-matched non-SFARI proteins (±10–50%, seed=42)
-5. **Motif Discovery** — MEME v5.5.9 discriminative mode (case/control)
-6. **Validation** — TOMTOM vs ELM, bootstrap (1000×), shuffled control, spike-in control
-7. **Enrichment** — Fisher's exact test + Benjamini-Hochberg FDR
+**1**. **Data Acquisition** - SFARI Gene List + UniProt Swiss-Prot sequences
+**2**. **Quality Control** - Sequence validation, length distribution, AA composition
+**3**. **IDR Prediction** - IUPred3 REST API (score > 0.5, min 15 AA)
+**4**. **Control Set** -  Length-matched non-SFARI proteins (±10–50%, seed=42)
+**5**. **Motif Discovery** - MEME v5.5.9 discriminative mode (case/control)
+**6**. **Validation** - TOMTOM vs ELM, bootstrap (1000×), shuffled control, spike-in control
+**7**. **Enrichment** - Fisher's exact test + Benjamini-Hochberg FDR
 
 ## Key Results
 
@@ -25,8 +25,8 @@ length-matched controls (n=251 non-SFARI Swiss-Prot human proteins).
 | Significant motifs | 3 (poly-H, poly-Q, structured M-S/T-T/S-I/V-M-E-T-T-T-T-M/L-A-T/S) |
 | Validated stable | Motif 3 bootstrap 98.6% detection (1000×) |
 | TOMTOM best hit | DEG_SPOP_SBC_1 (SPOP-binding degron, p=0.005) |
-| Shuffled control | 0 significant motifs — not due to composition noise |
-| Positive control | 4/4 spiked SLiMs recovered — pipeline validates |
+| Shuffled control | 0 significant motifs (not due to composition noise) |
+| Positive control | 4/4 spiked SLiMs recovered (pipeline validates) |
 | **Enriched (FDR q<0.05)** | poly-Q: OR=4.5, q=0.00022; poly-H: OR=∞, q=0.0059 |
 
 ## Reproducibility
