@@ -61,3 +61,8 @@ scripts/                 # All analysis scripts (00-*.py through 09-*.py)
 ## Full Report
 
 Open `index.html` in a browser for the interactive pipeline report.
+
+## License
+
+This work is licensed under CC BY-NC-ND 4.0. See `LICENSE` for details.
+Copyright (c) 2026 Swati. All rights reserved.
