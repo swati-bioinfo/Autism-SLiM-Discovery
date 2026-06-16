@@ -60,4 +60,4 @@ scripts/                 # All analysis scripts (00-*.py through 09-*.py)
 
 ## Full Report
 
-Open [`04-docs/index.html`](04-docs/index.html) in a browser for the interactive pipeline report.
+Open `index.html` in a browser for the interactive pipeline report.
