@@ -60,7 +60,7 @@ scripts/                 # All analysis scripts (00-*.py through 09-*.py)
 
 ## Full Report
 
-Open `index.html` in a browser for the interactive pipeline report.
+Open **[interactive pipeline report](https://swati-bioinfo.github.io/Autism-SLiM-Discovery/)** in a browser.
 
 ## License
 
