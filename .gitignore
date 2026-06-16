@@ -14,3 +14,8 @@ __pycache__/
 # OS files
 Thumbs.db
 .DS_Store
+
+# Hide workspace docs from repo root
+autism-motif-project.md
+design-to-execution.md
+pipeline-architecture.html

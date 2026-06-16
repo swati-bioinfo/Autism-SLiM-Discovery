@@ -246,6 +246,7 @@
     <button data-tab="meme">MEME Motif Discovery</button>
     <button data-tab="validation">Validation Controls</button>
     <button data-tab="stats">Statistical Analysis</button>
+    <button data-tab="findings">Findings</button>
     <button data-tab="figures">Figures</button>
     <button data-tab="params">Parameter Log</button>
   </nav>
@@ -961,6 +962,77 @@
     </section>
   </div>
 
+  <!-- ======================== FINDINGS ======================== -->
+  <div class="tab" id="tab-findings">
+    <section>
+      <h2>Draft Findings</h2>
+      <p style="color:var(--muted); margin-bottom: 20px;">
+        Following the claim template for each significant motif. Full details in <code>04-docs/findings-draft.md</code>.
+      </p>
+
+      <div class="summary-box">
+        <strong>Claim 1 &mdash; Poly-Glutamine Tract (Motif 2)</strong><br><br>
+        We found evidence that an <strong>11-residue poly-glutamine (poly-Q) motif</strong> is
+        significantly enriched in the intrinsically disordered regions of proteins
+        encoded by high-confidence autism risk genes (SFARI Category 1, n=242)
+        compared to length-matched controls (n=251 non-SFARI human proteins).
+        <br><br>
+        <strong>Enrichment:</strong> 41/1,502 autism IDRs (2.7%) vs. 7/1,130 control IDRs (0.6%),
+        odds ratio = 4.5, enrichment fold = 4.4&times;, <strong>FDR q = 0.00022</strong> (Benjamini-Hochberg).
+        <br><br>
+        <strong>Interpretation:</strong> Poly-glutamine tracts are well-known in transcriptional
+        regulation and neurological disorders. The enrichment suggests poly-Q tracts in IDRs
+        may be a shared property of autism-risk transcriptional regulators (e.g., MED13L, KMT2C,
+        CHD2, CHD8, SETD5, ASH1L, TBL1XR1), potentially modulating protein-protein interaction
+        networks via homotypic Q/N-rich phase separation.
+      </div>
+
+      <div class="summary-box">
+        <strong>Claim 2 &mdash; Poly-Histidine Tract (Motif 1)</strong><br><br>
+        We found evidence that a <strong>14-residue poly-histidine motif</strong> (N-terminal Glu,
+        consensus EHHHHHHHHHHHHH) is significantly enriched in the intrinsically
+        disordered regions of high-confidence autism risk proteins compared to
+        length-matched controls.
+        <br><br>
+        <strong>Enrichment:</strong> 12/1,502 autism IDRs (0.8%) vs. 0/1,130 control IDRs (0.0%),
+        odds ratio = &infin;, Fisher's exact p = 0.0012, <strong>FDR q = 0.0059</strong>.
+        <br><br>
+        <strong>Interpretation:</strong> Poly-histidine tracts are rare in the human proteome
+        and are primarily found in zinc-finger transcription factors and DNA-binding proteins.
+        The complete absence in controls suggests poly-H repeats may be a specific signature of
+        autism-related transcriptional machinery, though the low absolute count (12 hits) warrants
+        cautious interpretation.
+      </div>
+
+      <div class="summary-box">
+        <strong>Claim 3 &mdash; SPOP-Binding Degron-like Motif (Motif 3)</strong><br><br>
+        We found evidence that a <strong>15-residue motif</strong> (consensus
+        M[SA]T[TS][IV]METTTT[ML]AT[TS], best ELM match:
+        <strong>DEG_SPOP_SBC_1</strong>, SPOP-binding degron, p = 0.005) is enriched in the
+        intrinsically disordered regions of high-confidence autism risk proteins.
+        <br><br>
+        <strong>Enrichment:</strong> 6/1,502 autism IDRs (0.4%) vs. 0/1,130 control IDRs (0.0%),
+        odds ratio = &infin;, p = 0.034, <strong>FDR q = 0.086 (not significant)</strong>.
+        <br><br>
+        <strong>Bootstrap stability (1000&times;, 80% resample):</strong> Mean sites = 4.8 (SD = 2.2),
+        98.6% of bootstraps detected &ge;1 site, 85.0% detected &ge;3 sites.
+        <br><br>
+        <strong>Interpretation:</strong> Despite falling short of FDR significance, this motif is
+        the strongest structured SLiM candidate. The SPOP-binding degron match is notable because
+        SPOP is an E3 ubiquitin ligase adaptor, and SPOP mutations are linked to autism. The six
+        proteins containing this motif are strong candidates for SPOP-mediated regulation.
+      </div>
+
+      <h3>Summary Table</h3>
+      <table>
+        <tr><th>Motif</th><th>Consensus</th><th>Width</th><th>E-value</th><th>OR</th><th>q-value</th><th>FDR sig?</th><th>ELM hit</th></tr>
+        <tr><td>1 (poly-H)</td><td><code>EHHHHHHHHHHHHH</code></td><td>14</td><td>3.1e-31</td><td>&infin;</td><td>0.0059</td><td><span class="tag green">Yes</span></td><td>&mdash;</td></tr>
+        <tr><td>2 (poly-Q)</td><td><code>QQQQQQQQQQQ</code></td><td>11</td><td>7.1e-25</td><td>4.5</td><td>0.00022</td><td><span class="tag green">Yes</span></td><td>&mdash;</td></tr>
+        <tr><td>3 (structured)</td><td><code>M[SA]T[TS][IV]METTTT[ML]AT[TS]</code></td><td>15</td><td>6.6e-06</td><td>&infin;</td><td>0.086</td><td><span class="tag yellow">No</span></td><td>DEG_SPOP_SBC_1</td></tr>
+      </table>
+    </section>
+  </div>
+
   <!-- ======================== FIGURES ======================== -->
   <div class="tab" id="tab-figures">
     <section>
@@ -994,19 +1066,19 @@
       <p style="color:var(--muted); font-size:0.85rem; margin-bottom:12px;">
         Overlaid histogram of autism vs. control IDR lengths. Autism IDRs skewed toward longer regions (mean 42.4 vs 40.5).
       </p>
-      <img src="../figures/fig1-idr-length-distribution.png" alt="IDR Length Distribution" style="max-width:100%; height:auto; border:1px solid var(--border); border-radius:8px; margin-bottom:24px;">
+      <img src="figures/fig1-idr-length-distribution.png" alt="IDR Length Distribution" style="max-width:100%; height:auto; border:1px solid var(--border); border-radius:8px; margin-bottom:24px;">
 
       <h3>Figure 2: Motif Enrichment</h3>
       <p style="color:var(--muted); font-size:0.85rem; margin-bottom:12px;">
         Top: Bar plot of autism vs. control site counts per motif. Bottom: Volcano plot (&minus;log<sub>10</sub> p-value vs. enrichment fold).
       </p>
-      <img src="../figures/fig2-motif-enrichment.png" alt="Motif Enrichment" style="max-width:100%; height:auto; border:1px solid var(--border); border-radius:8px; margin-bottom:24px;">
+      <img src="figures/fig2-motif-enrichment.png" alt="Motif Enrichment" style="max-width:100%; height:auto; border:1px solid var(--border); border-radius:8px; margin-bottom:24px;">
 
       <h3>Figure 3: Bootstrap Distribution</h3>
       <p style="color:var(--muted); font-size:0.85rem; margin-bottom:12px;">
         Histogram of Motif 3 site counts across 1,000 bootstrap resamples (80% autism IDRs, with replacement). Mean=4.8, SD=2.2.
       </p>
-      <img src="../figures/fig3-bootstrap-distribution.png" alt="Bootstrap Distribution" style="max-width:100%; height:auto; border:1px solid var(--border); border-radius:8px; margin-bottom:24px;">
+      <img src="figures/fig3-bootstrap-distribution.png" alt="Bootstrap Distribution" style="max-width:100%; height:auto; border:1px solid var(--border); border-radius:8px; margin-bottom:24px;">
 
       <h3>Motif Logos</h3>
       <p style="color:var(--muted); font-size:0.85rem; margin-bottom:12px;">
@@ -1015,52 +1087,52 @@
       <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:16px; margin-bottom:24px;">
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px; text-align:center;">
           <div style="font-weight:600; font-size:0.8rem; margin-bottom:8px;">Motif 1</div>
-          <img src="../figures/motif1-logo.png" alt="Motif 1" style="max-width:100%; height:auto;">
+          <img src="figures/motif1-logo.png" alt="Motif 1" style="max-width:100%; height:auto;">
           <div style="font-size:0.7rem; color:var(--muted); margin-top:4px;">Poly-H</div>
         </div>
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px; text-align:center;">
           <div style="font-weight:600; font-size:0.8rem; margin-bottom:8px;">Motif 2</div>
-          <img src="../figures/motif2-logo.png" alt="Motif 2" style="max-width:100%; height:auto;">
+          <img src="figures/motif2-logo.png" alt="Motif 2" style="max-width:100%; height:auto;">
           <div style="font-size:0.7rem; color:var(--muted); margin-top:4px;">Poly-Q</div>
         </div>
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px; text-align:center;">
           <div style="font-weight:600; font-size:0.8rem; margin-bottom:8px;">Motif 3</div>
-          <img src="../figures/motif3-logo.png" alt="Motif 3" style="max-width:100%; height:auto;">
+          <img src="figures/motif3-logo.png" alt="Motif 3" style="max-width:100%; height:auto;">
           <div style="font-size:0.7rem; color:var(--muted); margin-top:4px;">SPOP degron-like</div>
         </div>
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px; text-align:center;">
           <div style="font-weight:600; font-size:0.8rem; margin-bottom:8px;">Motif 4</div>
-          <img src="../figures/motif4-logo.png" alt="Motif 4" style="max-width:100%; height:auto;">
+          <img src="figures/motif4-logo.png" alt="Motif 4" style="max-width:100%; height:auto;">
           <div style="font-size:0.7rem; color:var(--muted); margin-top:4px;">(NS)</div>
         </div>
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px; text-align:center;">
           <div style="font-weight:600; font-size:0.8rem; margin-bottom:8px;">Motif 5</div>
-          <img src="../figures/motif5-logo.png" alt="Motif 5" style="max-width:100%; height:auto;">
+          <img src="figures/motif5-logo.png" alt="Motif 5" style="max-width:100%; height:auto;">
           <div style="font-size:0.7rem; color:var(--muted); margin-top:4px;">(NS)</div>
         </div>
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px; text-align:center;">
           <div style="font-weight:600; font-size:0.8rem; margin-bottom:8px;">Motif 6</div>
-          <img src="../figures/motif6-logo.png" alt="Motif 6" style="max-width:100%; height:auto;">
+          <img src="figures/motif6-logo.png" alt="Motif 6" style="max-width:100%; height:auto;">
           <div style="font-size:0.7rem; color:var(--muted); margin-top:4px;">(NS)</div>
         </div>
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px; text-align:center;">
           <div style="font-weight:600; font-size:0.8rem; margin-bottom:8px;">Motif 7</div>
-          <img src="../figures/motif7-logo.png" alt="Motif 7" style="max-width:100%; height:auto;">
+          <img src="figures/motif7-logo.png" alt="Motif 7" style="max-width:100%; height:auto;">
           <div style="font-size:0.7rem; color:var(--muted); margin-top:4px;">(NS)</div>
         </div>
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px; text-align:center;">
           <div style="font-weight:600; font-size:0.8rem; margin-bottom:8px;">Motif 8</div>
-          <img src="../figures/motif8-logo.png" alt="Motif 8" style="max-width:100%; height:auto;">
+          <img src="figures/motif8-logo.png" alt="Motif 8" style="max-width:100%; height:auto;">
           <div style="font-size:0.7rem; color:var(--muted); margin-top:4px;">(NS)</div>
         </div>
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px; text-align:center;">
           <div style="font-weight:600; font-size:0.8rem; margin-bottom:8px;">Motif 9</div>
-          <img src="../figures/motif9-logo.png" alt="Motif 9" style="max-width:100%; height:auto;">
+          <img src="figures/motif9-logo.png" alt="Motif 9" style="max-width:100%; height:auto;">
           <div style="font-size:0.7rem; color:var(--muted); margin-top:4px;">(NS)</div>
         </div>
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px; text-align:center;">
           <div style="font-weight:600; font-size:0.8rem; margin-bottom:8px;">Motif 10</div>
-          <img src="../figures/motif10-logo.png" alt="Motif 10" style="max-width:100%; height:auto;">
+          <img src="figures/motif10-logo.png" alt="Motif 10" style="max-width:100%; height:auto;">
           <div style="font-size:0.7rem; color:var(--muted); margin-top:4px;">(NS)</div>
         </div>
       </div>
