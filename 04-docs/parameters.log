@@ -376,3 +376,37 @@ Results:
   Notes: Only poly-Q and poly-H survive FDR. Motif 3 nominally significant
   but q=0.086. Poly-Q has strongest signal: 4.4x fold enrichment, OR=4.5.
 Output: 03-analysis/enrichment-results.csv
+
+# ---------------------------------------------------------------------------
+# Phase 9: Figures
+# ---------------------------------------------------------------------------
+
+--- 2026-06-16 22:30 ---
+Tool:   10-generate-figures.py
+Action: Generate manuscript figures from analysis output
+Inputs:
+  - 00-raw/autism-idrs-clean.fasta (1502 seqs) + control (1130 seqs)
+  - 03-analysis/enrichment-results.csv
+  - 03-analysis/bootstrap-results.csv
+Outputs:
+  - figures/fig1-idr-length-distribution.png
+  - figures/fig2-motif-enrichment.png
+  - figures/fig3-bootstrap-distribution.png
+Params:
+  - Fig 1: overlaid histogram, log10 scale, KDE overlay
+  - Fig 2: dual-panel bar + volcano plot
+  - Fig 3: histogram with stats annotation (mean=4.8, SD=2.2)
+Note: First run failed (Unicode arrows on cp1252). Fixed column names
+  ('motif_name' not 'motif', 'sites_found' not 'sites'). Bootstrap CSV
+  has blank line separating data from summary — handled separately.
+
+--- 2026-06-16 23:26 ---
+Tool:   save-logos.py
+Action: Render 10 sequence logos from MEME XML PWM matrices
+Input:  03-analysis/meme.xml (probability matrix from motif > probabilities > alphabet_matrix)
+Method: BioPython motifs module -> matplotlib stacked bars per position
+Outputs: figures/motif{1-10}-logo.png
+Note:   MEME XML structure: motif > probabilities > alphabet_matrix >
+  alphabet_array elements with value[@letter_id] attributes.
+  Logo height = information content (bits) per position.
+  Background frequencies from MEME XML (1/20 uniform).

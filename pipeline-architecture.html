@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reference: Pipeline Architecture — Autism Motif Project</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@400;600&family=JetBrains+Mono&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: #fff;
+    color: #1a1a1a;
+    font-size: 14px;
+    line-height: 1.6;
+    max-width: 56rem;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+  @media print { body { padding: 0.5in; } @page { margin: 0.5in; } }
+  h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.2rem; }
+  .subtitle { font-size: 0.85rem; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 1.5rem; }
+  h2 { font-size: 1.1rem; font-weight: 600; margin-top: 1.5rem; border-bottom: 2px solid #1a1a1a; padding-bottom: 0.2rem; }
+  .flow { display: flex; flex-direction: column; align-items: center; gap: 0; margin: 1.2rem 0; }
+  .flow-row { display: flex; gap: 0.8rem; flex-wrap: wrap; justify-content: center; }
+  .flow-card {
+    background: #faf9f7; border: 1px solid #e5e3df; border-radius: 6px;
+    padding: 0.5rem 0.8rem; text-align: center; min-width: 110px; flex: 1;
+  }
+  .flow-card .label { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #888; }
+  .flow-card .title { font-size: 0.8rem; font-weight: 600; margin-top: 0.1rem; }
+  .flow-card .tool { font-size: 0.7rem; color: #888; font-style: italic; margin-top: 0.1rem; }
+  .flow-card.autism { background: #fce4ec; border-color: #f8bbd0; }
+  .flow-card.control { background: #e3f2fd; border-color: #90caf9; }
+  .flow-card.analysis { background: #e8f5e9; border-color: #a5d6a7; }
+  .flow-arrow { font-size: 1rem; color: #aaa; line-height: 1; margin: 0.1rem 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin: 0.8rem 0; }
+  th { text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid #1a1a1a; padding: 0.4rem 0.5rem 0.4rem 0; font-weight: 600; }
+  td { padding: 0.35rem 0.5rem 0.35rem 0; border-bottom: 1px solid #e5e3df; vertical-align: top; }
+  code { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; background: #f0f0ee; padding: 0.05rem 0.25rem; border-radius: 2px; }
+  a { color: #2563eb; }
+  hr { border: none; border-top: 1px solid #e5e3df; margin: 1rem 0; }
+</style>
+</head>
+<body>
+
+<h1>Pipeline Architecture</h1>
+<div class="subtitle">Autism Motif Project &middot; Data Flow &amp; Scripts</div>
+
+<h2>Data Flow</h2>
+
+<div class="flow">
+  <!-- Row 1: Sources -->
+  <div class="flow-row">
+    <div class="flow-card autism"><div class="label">Source 1</div><div class="title">SFARI Gene</div><div class="tool">gene.sfari.org</div></div>
+    <div class="flow-card autism"><div class="label">Source 2</div><div class="title">UniProt</div><div class="tool">rest.uniprot.org</div></div>
+    <div class="flow-card control"><div class="label">Source 3</div><div class="title">UniProt (Ref)</div><div class="tool">human proteome</div></div>
+  </div>
+  <div class="flow-arrow">&darr;</div>
+  <!-- Row 2: Acquisition scripts -->
+  <div class="flow-row">
+    <div class="flow-card"><div class="label">Step 1</div><div class="title">01-extract-category1.py</div><div class="tool">CSV &rarr; gene list</div></div>
+    <div class="flow-card"><div class="label">Step 2</div><div class="title">02-fetch-uniprot.py</div><div class="tool">gene list &rarr; FASTA</div></div>
+    <div class="flow-card"><div class="label">Step 3</div><div class="title">03-qc-sequences.py</div><div class="tool">validate FASTA</div></div>
+  </div>
+  <div class="flow-arrow">&darr;</div>
+  <!-- Row 3: IDR prediction -->
+  <div class="flow-row">
+    <div class="flow-card"><div class="label">Step 4a</div><div class="title">IUPred3 (web)</div><div class="tool">iupred3.elte.hu</div></div>
+    <div class="flow-card"><div class="label">Step 4b</div><div class="title">04-parse-iupred.py</div><div class="tool">scores &rarr; IDR FASTA</div></div>
+    <div class="flow-card control"><div class="label">Step 5</div><div class="title">05-build-control-set.py</div><div class="tool">ref sample &rarr; matched</div></div>
+  </div>
+  <div class="flow-arrow">&darr;</div>
+  <!-- Row 4: Motif discovery -->
+  <div class="flow-row">
+    <div class="flow-card analysis"><div class="label">Step 6</div><div class="title">MEME (web/CLI)</div><div class="tool">meme-suite.org</div></div>
+    <div class="flow-card analysis"><div class="label">Step 7</div><div class="title">TOMTOM (web)</div><div class="tool">vs ELM database</div></div>
+    <div class="flow-card analysis"><div class="label">Step 8</div><div class="title">Enrichment test</div><div class="tool">Fisher + FDR</div></div>
+  </div>
+</div>
+
+<hr>
+
+<h2>Scripts Reference</h2>
+
+<table>
+  <tr><th>Script</th><th>Input</th><th>Output</th><th>Phase</th></tr>
+  <tr><td><code>01-extract-category1.py</code></td><td>SFARI CSV</td><td><code>category1-genes.txt</code></td><td>Acquisition</td></tr>
+  <tr><td><code>02-fetch-uniprot.py</code></td><td>gene list</td><td><code>autism-proteins.fasta</code></td><td>Acquisition</td></tr>
+  <tr><td><code>03-qc-sequences.py</code></td><td>FASTA</td><td><code>qc-summary.txt</code></td><td>QC</td></tr>
+  <tr><td><code>04-extract-idrs.py</code></td><td>full FASTA</td><td><code>autism-idrs.fasta</code></td><td>Preprocessing</td></tr>
+  <tr><td><code>04-parse-iupred.py</code></td><td>IUPred3 results</td><td><code>autism-idrs.fasta</code></td><td>Preprocessing</td></tr>
+  <tr><td><code>05-build-control-set.py</code></td><td>UniProt ref + gene list</td><td><code>control-proteins.fasta</code></td><td>Acquisition</td></tr>
+  <tr><td><code>run-all.py</code></td><td>&mdash;</td><td>runs steps 1&ndash;5</td><td>Orchestration</td></tr>
+</table>
+
+<hr>
+
+<h2>Directory Structure</h2>
+
+<pre style="font-size: 0.78rem; background: #faf9f7; padding: 0.8rem; border-radius: 4px; margin: 0.5rem 0;">
+autism-motif-project/
+├── 00-raw/
+│   ├── SFARI-Gene_genes.csv          # Manual download
+│   ├── category1-genes.txt            # Script 1 output
+│   ├── autism-proteins.fasta          # Script 2 output
+│   ├── autism-idrs.fasta              # Step 4 output
+│   └── iupred3-results.txt            # Manual download
+├── 01-control-data/
+│   ├── reference-human.fasta          # Script 5 download
+│   └── control-proteins.fasta         # Script 5 output
+├── 02-motif-discovery/
+│   └── meme-output/                   # MEME results folder
+├── 03-analysis/
+│   └── enrichment-results.csv         # You'll build this
+├── 04-docs/
+│   ├── parameters.log                 # Tool parameters
+│   ├── qc-summary.txt                 # Script 3 output
+│   └── README.md                      # Project overview
+├── 01-extract-category1.py
+├── 02-fetch-uniprot.py
+├── 03-qc-sequences.py
+├── 04-extract-idrs.py
+├── 05-build-control-set.py
+└── run-all.py
+</pre>
+
+<hr>
+
+<h2>Quick Start</h2>
+
+<pre style="font-size: 0.78rem; background: #faf9f7; padding: 0.8rem; border-radius: 4px;">
+pip install requests biopython pandas numpy
+# Download SFARI CSV manually, then:
+python 01-extract-category1.py
+python 02-fetch-uniprot.py
+python 03-qc-sequences.py
+# Visit iupred3.elte.hu for IDR prediction
+# Visit meme-suite.org for motif discovery
+</pre>
+
+<p style="margin-top: 1rem; font-size: 0.78rem; color: #888; text-align: center;">
+  See <a href="../lessons/0007-from-design-to-execution.md">Lesson 7</a> for the full walkthrough.
+</p>
+
+</body>
+</html>

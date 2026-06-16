@@ -210,8 +210,13 @@ Interpretation:
     for a functional SLiM
   - Motifs 4-10 not statistically significant (E-value > 0.05)
 
-Validation pipeline running:
-  - TOMTOM vs ELM database (pending)
-  - Bootstrap stability (pending)
-  - Shuffled negative control (pending)
-  - Positive control spike-in (pending)
+Validation pipeline: COMPLETE
+  - TOMTOM vs ELM database: Motif 3 → 6 ELM matches, best DEG_SPOP_SBC_1 (p=0.005)
+  - Bootstrap stability: 98.6% detection (1000x resamples, STABLE)
+  - Shuffled negative control: 0 significant motifs (all E > 10^4)
+  - Positive control spike-in: 4/4 spiked SLiM classes recovered (E < 0.05)
+
+Enrichment testing (Fisher's + BH FDR, q<0.05):
+  - Motif 1 (poly-H):  12/1502 vs 0/1130, OR=inf,   q=0.0059  ***
+  - Motif 2 (poly-Q):  41/1502 vs 7/1130, OR=4.5,   q=0.00022 ***
+  - Motif 3 (structured): 6/1502 vs 0/1130, p=0.034, q=0.086 (NS)

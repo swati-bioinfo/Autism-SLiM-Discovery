@@ -263,14 +263,9 @@ I'll guide you through every command, script, and decision along the way.
   - Parameter Log tab: all new tool runs
   This is the last step before archiving.
 
-- [ ] **10.5 — Git repository setup**
-  ```bash
-  git init
-  git add .
-  git commit -m "Initial commit: autism motif discovery pipeline"
-  ```
+- [x] **10.5 — Git repository setup** *(done — 42 files, 1 commit)*
 
-- [ ] **10.6 — (Optional) Deposit data to Zenodo**
+- [ ] **10.6 — (Optional) Deposit data to Zenodo** *(skipped)*
   Raw data + QC report + MEME output + reproducibility statement.
 
 ---
@@ -279,15 +274,18 @@ I'll guide you through every command, script, and decision along the way.
 
 ### Step 11 — Write Up Results
 
-- [ ] **11.1 — Draft findings**
-  Using the claim template:
-  > "We found evidence that an [X-residue motif with consensus sequence Y] is significantly enriched in the intrinsically disordered regions of proteins encoded by high-confidence autism risk genes (SFARI Category 1) compared to length-matched controls, and this motif matches known [biological function] motifs in the ELM database."
+- [x] **11.1 — Draft findings**
+  Claims drafted for all 3 motifs in `04-docs/findings-draft.md`:
+  - **Poly-Q tract (Motif 2):** q=0.00022, OR=4.5 — enriched in autism transcriptional regulators
+  - **Poly-H tract (Motif 1):** q=0.0059, OR=∞ — rare in controls, found in ZNF/TF proteins
+  - **SPOP-binding degron-like (Motif 3):** q=0.086 (not FDR sig), but 98.6% bootstrap stable
 
-- [ ] **11.2 — Generate figures**
-  - Motif logos from MEME output
-  - Length distribution histograms
-  - Enrichment bar plots
+- [x] **11.2 — Generate figures**
+  - Motif logos from MEME output → `figures/motif{1-10}-logo.png`
+  - Length distribution histogram → `figures/fig1-idr-length-distribution.png`
+  - Enrichment bar plots → `figures/fig2-motif-enrichment.png`
+  - Bootstrap distribution → `figures/fig3-bootstrap-distribution.png`
 
 ---
 
-**Progress: 0 / ~30 substeps complete**
+**Progress: 24 / ~31 substeps complete**
