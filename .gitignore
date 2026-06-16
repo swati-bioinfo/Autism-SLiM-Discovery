@@ -1,0 +1,16 @@
+# Playwright browser artifacts
+.playwright-mcp/
+page-*.yml
+
+# Temp/status files
+meme-status*.txt
+meme-status-*.txt
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# OS files
+Thumbs.db
+.DS_Store

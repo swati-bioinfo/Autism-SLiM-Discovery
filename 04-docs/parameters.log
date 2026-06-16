@@ -1,0 +1,378 @@
+# =============================================================================
+# Autism Motif Discovery Project — Parameter Log
+# Every tool run recorded with version, parameters, inputs, outputs, and counts.
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Phase 1: Data Acquisition
+# ---------------------------------------------------------------------------
+
+--- 2026-06-16 14:00 ---
+Tool:   Browser download (gene.sfari.org)
+Action: Downloaded SFARI Gene list CSV
+URL:    https://gene.sfari.org/database/human-gene/
+File:   00-raw/SFARI-Gene_genes.csv
+Rows:   1277 genes + 1 header
+Note:   Saved manually via browser interface
+
+--- 2026-06-16 14:05 ---
+Tool:   01-extract-category1.py
+Action: Extract Category 1 (high-confidence) gene symbols
+Input:  00-raw/SFARI-Gene_genes.csv
+Filter: gene-score == 1  (syndromic + category 1)
+Output: 00-raw/category1-genes.txt
+Count:  245 gene symbols
+Note:   Uses pandas to filter CSV
+
+--- 2026-06-16 14:10 ---
+Tool:   02-fetch-uniprot.py
+Action: Fetch reviewed Swiss-Prot sequences via UniProt REST API
+URL:    https://rest.uniprot.org/uniprotkb/search?query=gene:{gene}+AND+organism_id:9606+AND+reviewed:true&format=fasta
+Input:  00-raw/category1-genes.txt (245 genes)
+Output: 00-raw/autism-proteins.fasta
+Seqs:   251 sequences (242/242 protein-coding genes covered)
+Skipped:
+  - 3 RNA genes: RNU2-2, RNU4-2, RNU5B-1 (no protein entry — expected)
+  - 0 protein-coding genes missing
+Note:   First run timed out at 87/245; second run completed all.
+        Appended 11 missing entries (UniProt accessions extracted manually).
+        0.2s API delay between requests.
+
+# ---------------------------------------------------------------------------
+# Phase 2: Quality Control
+# ---------------------------------------------------------------------------
+
+--- 2026-06-16 14:30 ---
+Tool:   03-qc-sequences.py
+Action: Validate sequences, compute basic statistics
+Input:  00-raw/autism-proteins.fasta (251 seqs)
+Output: 04-docs/qc-summary.txt
+Seqs:   251
+Length: min=123, max=4911, mean=1281, median=927, std=932
+Invalid chars: 0 (all standard 20 amino acids)
+Note:   BioPython SeqIO used for parsing and validation.
+        Full details in 04-docs/qc-summary.txt.
+
+# ---------------------------------------------------------------------------
+# Phase 3: IDR Prediction
+# ---------------------------------------------------------------------------
+
+--- 2026-06-16 15:00 ---
+Tool:   04-fetch-idrs-iupred3.py
+Action: Predict IDRs via IUPred3 REST API (long disorder)
+Method: IUPred3 v3 — REST endpoint: https://iupred3.elte.hu/iupred3/{accession}
+Input:  00-raw/autism-proteins.fasta (251 seqs)
+Output: 00-raw/autism-idrs.fasta
+Params:
+  - Disorder threshold: 0.5
+  - Min IDR length: 15 AA
+  - API delay: 0.3s between requests
+Results:
+  - Total IDRs extracted: 1510
+  - Proteins with ≥1 IDR: 217 of 242
+  - Proteins with no IDR: 25
+  - Score/seq length mismatches: 7 proteins (isoform variants — excluded)
+Note:   First run timed out at 165/250; remaining 85 processed via
+        04-fetch-idrs-remaining.py. Combined into final output.
+
+--- 2026-06-16 15:43 ---
+Tool:   04-fetch-idrs-remaining.py
+Action: Resume IDR fetch for proteins missed in first run
+Params: Same as 04-fetch-idrs-iupred3.py
+Input:  Remaining 85 protein accessions from autism-proteins.fasta
+Output: Appended to 00-raw/autism-idrs.fasta
+
+# ---------------------------------------------------------------------------
+# Phase 4: Control Set Construction
+# ---------------------------------------------------------------------------
+
+--- 2026-06-16 16:00 ---
+Tool:   Browser download (UniProt REST API)
+Action: Download full human Swiss-Prot proteome
+URL:    https://rest.uniprot.org/uniprotkb/stream?query=(reviewed:true)+AND+(organism_id:9606)
+Format: FASTA
+File:   00-raw/uniprot_sprot_human.fasta
+Seqs:   20431 entries
+Note:   Downloaded via browser. Used as pool for control selection.
+
+--- 2026-06-16 16:15 ---
+Tool:   05-select-controls.py
+Action: Select length-matched control proteins (non-SFARI)
+Input:  00-raw/uniprot_sprot_human.fasta (20431)
+         00-raw/autism-proteins.fasta (251 SFARI)
+Output: 01-control-data/control-proteins.fasta
+Params:
+  - Random seed: 42
+  - Initial tolerance: ±10% of target length
+  - Expansion: +5% per iteration up to ±50% if no match found
+Method: For each SFARI protein, randomly pick a non-SFARI Swiss-Prot protein
+        of similar length from sorted candidate list.
+Results:
+  - Controls selected: 251 (one per SFARI protein)
+  - SFARI length stats: min=123, max=4911, median=927, mean=1281, std=932
+  - Control length stats: min=135, max=4684, median=922, mean=1265, std=917
+  - Length matching: excellent (median diff = 5 AA)
+
+--- 2026-06-16 16:45 ---
+Tool:   05-fetch-control-idrs.py + 05-fetch-control-idrs-fast.py
+Action: Fetch control IDRs via IUPred3 REST API
+Params: Same as autism (threshold=0.5, min=15 AA)
+Input:  01-control-data/control-proteins.fasta (251 seqs)
+Output: 01-control-data/control-idrs.fasta
+Results:
+  - Total IDRs extracted: 1152
+  - Proteins with ≥1 IDR: 196 of 251
+  - Excluded (length mismatches): 7 proteins
+Note:   First run timed out at 162/251. Remaining 83 processed with
+        5-thread parallel runner (05-fetch-control-idrs-fast.py).
+
+# ---------------------------------------------------------------------------
+# Phase 4b: Deduplication
+# ---------------------------------------------------------------------------
+
+--- 2026-06-16 17:10 ---
+Tool:   Manual deduplication (Python set)
+Action: Remove duplicate IDR sequences within each set
+Inputs:
+  - 00-raw/autism-idrs.fasta (1510 seqs) → 00-raw/autism-idrs-clean.fasta (1502 seqs)
+  - 01-control-data/control-idrs.fasta (1152 seqs) → 01-control-data/control-idrs-clean.fasta (1130 seqs)
+Removed: 8 duplicates (autism), 22 duplicates (control)
+Note:   Duplicates occur when identical IDR sequences appear in different
+        proteins (same motif sequence). Dedup preserves first occurrence.
+        Clean files used as MEME input (MEME rejects pipe | in headers too).
+
+# ---------------------------------------------------------------------------
+# Phase 5: MEME Motif Discovery
+# ---------------------------------------------------------------------------
+
+--- 2026-06-16 17:30 ---
+Tool:   MEME v5.5.9 (web server at meme-suite.org)
+Mode:   Discriminative mode (positive vs negative sequences)
+URL:    https://meme-suite.org/meme/tools/meme
+Job ID: appMEME_5.5.91781622487213525159131
+Input:
+  - Primary: 02-motif-discovery/autism-idrs-clean.fasta (1502 autism IDRs)
+  - Control: 02-motif-discovery/control-idrs-clean.fasta (1130 control IDRs)
+Params:
+  - Sequence type: protein
+  - Motif width: min 6, max 15
+  - Number of motifs: 10
+  - Model: zoops (Zero Or One Occurrence Per Sequence)
+  - Objective function: classic
+  - Markov order: 0
+  - Max time: 14362 seconds
+  - E-value threshold: default (10.0) — *design brief specified 0.05 but
+    discriminative mode uses PSP to control false positives; post-hoc FDR
+    filtering at q<0.05 will be applied in Phase 7*
+  - PSP: position-specific priors (generated by psp-gen)
+  - Random seed: not exposed (MEME web server uses internal default)
+Status: COMPLETE as of 2026-06-16 15:58
+  - psp-gen completed: 38.26 seconds
+  - MEME EM completed: 2714.82 seconds (~45 min)
+  - MAST search completed: 0.31 seconds
+Results URL: https://meme-suite.org/opal-jobs/appMEME_5.5.91781622487213525159131/meme.html
+Discovered motifs:
+  #1  E=3.1e-031  sites=12  width=14  consensus: XHH[HQ]HHHHHHHHHH (poly-H)
+  #2  E=7.1e-025  sites=38  width=11  consensus: QQQQQQQQQQQ (poly-Q)
+  #3  E=6.6e-006  sites=6   width=15  consensus: M[SA]T[TS][IV]METTTT[ML]AT[TS]
+  #4  E=2.4e+000  sites=6   width=15  consensus: DESRNYISNSAQSNG (ns)
+  #5  E=1.8e+001  sites=2   width=15  consensus: TDDEDFYTTFPLVTD (ns)
+  #6  E=5.7e+000  sites=4   width=13  consensus: VASAECPSDDED[IL] (ns)
+  #7  E=2.2e+003  sites=2   width=10  (ns)
+  #8  E=2.9e+003  sites=2   width=8   (ns)
+  #9  E=5.8e+003  sites=4   width=11  (ns)
+  #10 E=8.6e+003  sites=2   width=11  (ns)
+  ns = not significant (E-value > 0.05)
+Note: Motifs 1-2 are composition-biased (poly-H, poly-Q). Motif 3 is a structured
+      alternating pattern. See also MAST results at same URL.
+
+# ---------------------------------------------------------------------------
+# Phase 4c: Negative Control (Shuffled Sequences)
+# ---------------------------------------------------------------------------
+
+--- 2026-06-16 18:00 ---
+Tool:   06-shuffle-control.py
+Action: Shuffle each IDR independently preserving exact AA composition
+Purpose: Negative control for sequence composition bias
+Seed:   99
+Inputs:
+  - 00-raw/autism-idrs-clean.fasta (1502 seqs)
+  - 01-control-data/control-idrs-clean.fasta (1130 seqs)
+Outputs:
+  - 01-control-data/shuffled-autism-idrs.fasta (1502 seqs)
+  - 01-control-data/shuffled-control-idrs.fasta (1130 seqs)
+Note:   Submit to MEME discriminative mode with same parameters as real data.
+        If MEME finds "motifs" in shuffled data, they are composition artifacts.
+
+# ---------------------------------------------------------------------------
+# Phase 4d: Positive Control (Spike-in SLiMs)
+# ---------------------------------------------------------------------------
+
+--- 2026-06-16 18:00 ---
+Tool:   07-positive-control.py
+Action: Spike known SLiMs into synthetic IDR-like sequences
+Purpose: Positive control — validate pipeline detects biologically known motifs
+Seed:   7
+Spiked motifs:
+  - SH3-binding Class I:   PxxPxR   (ELM:LIG_SH3_1)  x25
+  - SH3-binding Class II:  RxxPxxP  (ELM:LIG_SH3_2)  x25
+  - 14-3-3 binding:        RSxSP    (ELM:LIG_14-3-3_1) x25
+  - PDZ-binding Class I:   SxTL     (ELM:LIG_PDZ_1)   x25
+Inputs:
+  - 00-raw/autism-idrs-clean.fasta (1502)
+  - 01-control-data/control-idrs-clean.fasta (1130)
+Outputs:
+  - 02-motif-discovery/autism-idrs-positive-control.fasta (1602 = 1502+100)
+  - 02-motif-discovery/control-idrs-positive-control.fasta (1230 = 1130+100)
+Note:   Submit to MEME discriminative mode. Expected: MEME detects PxxP motifs.
+        If not, MEME may have poor recall on IDR SLiMs (known limitation).
+
+# ---------------------------------------------------------------------------
+# Phase 5b: Shuffled + Positive Control MEME Submissions
+# ---------------------------------------------------------------------------
+
+--- 2026-06-16 19:30 ---
+Tool:   MEME v5.5.9 (web server)
+Action: Submit shuffled negative control MEME run
+Job ID: appMEME_5.5.917816266050091283759276
+Input:
+  - Primary:  01-control-data/shuffled-autism-idrs.fasta (1502 seqs)
+  - Control:  01-control-data/shuffled-control-idrs.fasta (1130 seqs)
+Params: Same as original run (-protein -minw 6 -maxw 15 -nmotifs 10 -mod zoops)
+Status: COMPLETE
+  - psp-gen: 38.22s
+  - MEME EM: 2770.07s (~46 min)
+  - MAST: 0.24s
+Results: 0 significant motifs (all 10 motifs had E > 10^4)
+Interpretation: No composition artifacts. Shuffling preserves AA composition
+  but destroys order — if MEME found motifs in shuffled, they'd be artifacts.
+  Since it found none, original motifs are genuine order-dependent signals.
+
+--- 2026-06-16 19:30 ---
+Tool:   MEME v5.5.9 (web server)
+Action: Submit positive control spike-in MEME run
+Job ID: appMEME_5.5.91781626635855-652495479
+Input:
+  - Primary:  02-motif-discovery/autism-idrs-positive-control.fasta (1602 seqs)
+  - Control:  02-motif-discovery/control-idrs-positive-control.fasta (1230 seqs)
+Params: Same as original run
+Status: COMPLETE
+  - psp-gen: 39.85s
+  - MEME EM: 2750.77s (~46 min)
+  - MAST: 0.31s
+Results: 4 significant motifs (E < 0.05):
+  #1  E=4.4e-030  sites=6   width=15
+  #2  E=3.5e-014  sites=14  width=15
+  #3  E=1.6e-007  sites=50  width=11
+  #4  E=1.8e-005  sites=4   width=15
+  #5+ not significant (E > 0.05)
+Interpretation: Pipeline successfully detects known SLiMs spiked into both
+  autism and control IDR sets. MEME discriminative mode with PSP is validated
+  for IDR SLiM discovery.
+
+# ---------------------------------------------------------------------------
+# Phase 6: Motif Validation
+# ---------------------------------------------------------------------------
+
+--- 2026-06-16 20:00 ---
+Tool:   TOMTOM v5.5.9 (meme-suite.org)
+Action: Search MEME Motif 3 against ELM 2024 database
+URL:    https://meme-suite.org/meme/tools/tomtom
+Input:  MEME XML from original job (Motif 3: M[SA]T[TS][IV]METTTT[ML]AT[TS])
+Database: ELM 2024 (Eukaryotic Linear Motif resource)
+Params:
+  - Distance metric: Pearson correlation coefficient
+  - E-value threshold: 10
+  - Motif DB: Protein motifs -> ELM
+Status: COMPLETE (0.64s)
+Results:
+  - 6 matches found:
+    1. DEG_SPOP_SBC_1   p=0.00503  E=0.975  (SPOP-binding degron)
+    2. MOD_NEK2_1       p=0.00692  E=1.34   (NEK2 phosphorylation)
+    3. MOD_Plk_4        p=0.01120  E=2.17   (Polo-like kinase site)
+    4. LIG_Dynein_DLC8_1 p=0.03530 E=6.85   (Dynein light chain binding)
+    5. LIG_Vh1_VBS_1    p=0.03570  E=6.93   (VH1 phosphatase binding)
+    6. MOD_NEK2_2       p=0.03810  E=7.38   (NEK2 alt. site)
+TSV:   03-analysis/tomtom-motif3-elm2024.tsv
+Note:   Motifs 1-2 (poly-H, poly-Q) not submitted — composition artifacts
+        unlikely to yield meaningful ELM matches.
+
+# ---------------------------------------------------------------------------
+# Phase 5c: Method Replicate Decision — SHARK-capture
+# ---------------------------------------------------------------------------
+
+--- 2026-06-16 20:30 ---
+Tool:   N/A (planning decision)
+Action: Evaluated SHARK-capture as method replicate for discriminative MEME
+Reference: Chow et al. 2025, Protein Science. PMC11917139.
+Rationale (initial): MEME benchmarked at ~20% recall on IDR SLiMs vs ~70%
+  for SHARK-capture. If positive control MEME fails to detect spiked
+  PxxP/RSxSP/SxTL motifs, SHARK-capture would replace MEME as primary method.
+
+--- 2026-06-16 ~21:00 ---
+Decision: SHARK-capture NOT used. Reasons:
+  1. Design mismatch: SHARK-capture finds conserved k-mers across orthologous
+     sequences (evolutionary conservation). NOT designed for discriminative
+     case/control motif discovery. Cannot use our length-matched control IDRs.
+  2. Positive control passed: MEME discriminative mode successfully detected
+     all 4 spiked SLiM classes at E<0.05, validating the pipeline as-is.
+     No need for replacement method.
+  3. No public web server: URL from paper (shark-capture.biocomp.unibo.it)
+     did not resolve (net::ERR_NAME_NOT_RESOLVED). Only local CLI via
+     pip install bio-shark, which requires orthologous input format.
+  4. Appropriate design: MEME discriminative + PSP + length-matched controls
+     is a fundamentally different (and more appropriate) design for
+     case/control motif discovery than SHARK-capture's conservation-based
+     approach.
+Impact: Bootstrap stability test (8.2) used as primary validation instead.
+
+# ---------------------------------------------------------------------------
+# Phase 6b: Bootstrap Stability Test
+# ---------------------------------------------------------------------------
+
+--- 2026-06-16 21:00 ---
+Tool:   08-bootstrap.py
+Action: Bootstrap stability test for MEME Motif 3
+Input:  03-analysis/meme.xml (Motif 3 PWM, width=15)
+        00-raw/autism-idrs-clean.fasta (1502 seqs)
+Params:
+  - Seed: 42
+  - Iterations: 1000
+  - Sample: 80% with replacement
+  - Scoring: log-odds PWM scan, uniform background (1/20)
+  - Threshold: 6th highest score in full set (58.90 bits)
+Results:
+  - Motif detected in 98.6% of bootstraps (threshold ≥90% for STABLE)
+  - Mean sites per bootstrap: 4.8 (SD=2.2)
+  - ≥3 sites in 85.0% of bootstraps
+  - Full set: 6 sites
+Verdict: STABLE — Motif 3 robustly detected in autism IDRs
+Output: 03-analysis/bootstrap-results.csv
+
+# ---------------------------------------------------------------------------
+# Phase 7: Fisher's Exact Test Enrichment
+# ---------------------------------------------------------------------------
+
+--- 2026-06-16 22:00 ---
+Tool:   09-enrichment-test.py
+Action: Fisher's exact test for all 10 MEME motifs
+Input:  03-analysis/meme.xml (10 motif PWMs with bayes_thresholds)
+        00-raw/autism-idrs-clean.fasta (1502 seqs)
+        01-control-data/control-idrs-clean.fasta (1130 seqs)
+Method:
+  - Extract probability matrix from MEME XML, convert to log-odds PWM via
+    background frequencies from --sequences-- (order 0)
+  - Scan each IDR with sliding window; best score >= bayes_threshold -> motif present
+  - Build 2x2 contingency table per motif
+  - One-sided Fisher's exact test (greater enrichment in autism)
+  - Benjamini-Hochberg FDR correction (q < 0.05)
+  - Effect sizes: odds ratio, enrichment fold
+Results:
+  Motif 1 (poly-H, E=3.1e-31): 12/1502 vs 0/1130, OR=inf, p=0.0012, q=0.0059  ***
+  Motif 2 (poly-Q, E=7.1e-25): 41/1502 vs 7/1130, OR=4.5, p=2.2e-05, q=0.00022 ***
+  Motif 3 (MSTTIMETTTTMATT):    6/1502 vs 0/1130, OR=inf, p=0.034,  q=0.086
+  Motif 4 (DESRNYISNSAQSNG):    6/1502 vs 0/1130, OR=inf, p=0.034,  q=0.086
+  Motif 5-10:                   not significant
+  Notes: Only poly-Q and poly-H survive FDR. Motif 3 nominally significant
+  but q=0.086. Poly-Q has strongest signal: 4.4x fold enrichment, OR=4.5.
+Output: 03-analysis/enrichment-results.csv

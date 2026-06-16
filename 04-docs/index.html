@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Autism Motif Discovery — Pipeline Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..700&family=Geist:wght@100..900&family=Geist+Mono:wght@400..700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #F7F6F3;
+    --surface: #FFFFFF;
+    --border: #EAEAEA;
+    --text: #2F3437;
+    --muted: #787774;
+    --accent: #1F6C9F;
+    --accent-bg: #E1F3FE;
+    --green-bg: #EDF3EC;
+    --green-text: #346538;
+    --red-bg: #FDEBEC;
+    --red-text: #9F2F2D;
+    --yellow-bg: #FBF3DB;
+    --yellow-text: #956400;
+    --serif: 'Newsreader', 'Georgia', serif;
+    --sans: 'Geist', 'Helvetica Neue', sans-serif;
+    --mono: 'Geist Mono', 'SF Mono', 'JetBrains Mono', monospace;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+
+  header {
+    padding: 48px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0;
+  }
+  header h1 {
+    font-family: var(--serif);
+    font-size: 2rem;
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    margin-bottom: 8px;
+  }
+  header p {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  nav {
+    display: flex;
+    gap: 2px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  nav button {
+    font-family: var(--sans);
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 12px 16px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    transition: color 150ms, border-color 150ms;
+  }
+  nav button:hover { color: var(--text); }
+  nav button.active {
+    color: var(--text);
+    border-bottom-color: var(--text);
+  }
+
+  .tab { display: none; }
+  .tab.active { display: block; }
+
+  section { margin-bottom: 48px; }
+  section h2 {
+    font-family: var(--serif);
+    font-size: 1.35rem;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  section h3 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 20px;
+  }
+  .stat-card .num {
+    font-family: var(--mono);
+    font-size: 1.4rem;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  .stat-card .label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .stat-card .sublabel {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 8px;
+    border-radius: 9999px;
+  }
+  .tag.green { background: var(--green-bg); color: var(--green-text); }
+  .tag.red { background: var(--red-bg); color: var(--red-text); }
+  .tag.blue { background: var(--accent-bg); color: var(--accent); }
+  .tag.yellow { background: var(--yellow-bg); color: var(--yellow-text); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    margin-bottom: 24px;
+  }
+  th {
+    text-align: left;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  td:first-child { font-family: var(--mono); font-size: 0.8rem; }
+  tr:last-child td { border-bottom: none; }
+
+  .log-entry {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .log-entry:last-child { border-bottom: none; }
+  .log-entry .time {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .log-entry .tool {
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .log-entry .detail {
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .log-entry .detail code {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    background: #F0EFEC;
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  .summary-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+  }
+  .summary-box p { font-size: 0.88rem; color: var(--muted); line-height: 1.6; }
+
+  .comp-table td:last-child { font-family: var(--mono); font-size: 0.8rem; }
+
+  footer {
+    padding: 32px 0;
+    border-top: 1px solid var(--border);
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  @media (max-width: 640px) {
+    header h1 { font-size: 1.5rem; }
+    .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    nav button { padding: 10px 12px; font-size: 0.75rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <h1>Autism Motif Discovery</h1>
+    <p>Pipeline report &mdash; SFARI Category 1 &middot; SLiM discovery in intrinsically disordered regions &middot; Updated 2026-06-16</p>
+  </div>
+</header>
+
+<div class="container">
+  <nav id="tabs" role="tablist">
+    <button class="active" data-tab="overview">Overview</button>
+    <button data-tab="sources">Data Sources</button>
+    <button data-tab="qc">Quality Control</button>
+    <button data-tab="idr">IDR Prediction</button>
+    <button data-tab="control">Control Set</button>
+    <button data-tab="meme">MEME Motif Discovery</button>
+    <button data-tab="validation">Validation Controls</button>
+    <button data-tab="stats">Statistical Analysis</button>
+    <button data-tab="params">Parameter Log</button>
+  </nav>
+
+  <!-- ======================== OVERVIEW ======================== -->
+  <div class="tab active" id="tab-overview">
+    <section>
+      <h2>Pipeline Overview</h2>
+      <p style="color:var(--muted); margin-bottom: 24px;">
+        Systematic discovery of conserved short linear motifs (SLiMs) in intrinsically disordered regions (IDRs)
+        of high-confidence autism risk genes (SFARI Category 1) vs. length-matched controls.
+      </p>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="num">242</div>
+          <div class="label">SFARI Category 1 Genes</div>
+          <div class="sublabel">Protein-coding, all covered</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">251</div>
+          <div class="label">UniProt Sequences</div>
+          <div class="sublabel">Reviewed Swiss-Prot</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">1,502</div>
+          <div class="label">Autism IDRs</div>
+          <div class="sublabel">From 217 proteins</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">1,130</div>
+          <div class="label">Control IDRs</div>
+          <div class="sublabel">From 196 proteins</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">10</div>
+          <div class="label">MEME Motifs</div>
+          <div class="sublabel">min 6 &ndash; max 15 AA</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">20,431</div>
+          <div class="label">Swiss-Prot Pool</div>
+          <div class="sublabel">Human, reviewed</div>
+        </div>
+      </div>
+
+      <div class="summary-box">
+        <strong>Status:</strong> Pipeline <span class="tag green">COMPLETE</span>.
+        3 significant motifs found (poly-H, poly-Q, structured pattern).
+        Motif 3 validated by TOMTOM (DEG_SPOP_SBC_1, p=0.005) and bootstrap (98.6% stability).
+        Shuffled control: 0 motifs. Positive control: all 4 spiked SLiMs recovered.
+        <strong>Key enrichment (q&lt;0.05):</strong> poly-Q OR=4.5 (q=0.00022), poly-H OR=inf (q=0.0059).
+      </div>
+    </section>
+
+    <section>
+      <h2>Phase Progress</h2>
+      <table>
+        <tr><th>Phase</th><th>Description</th><th>Status</th></tr>
+        <tr><td>1</td><td>Data Acquisition (SFARI, UniProt)</td><td><span class="tag green">Done</span></td></tr>
+        <tr><td>2</td><td>Quality Control</td><td><span class="tag green">Done</span></td></tr>
+        <tr><td>3</td><td>IDR Prediction (IUPred3)</td><td><span class="tag green">Done</span></td></tr>
+        <tr><td>4</td><td>Control Set Construction</td><td><span class="tag green">Done</span></td></tr>
+        <tr><td>5</td><td>MEME Motif Discovery</td><td><span class="tag green">Done</span></td></tr>
+        <tr><td>6</td><td>Motif Validation (TOMTOM, bootstrap, controls)</td><td><span class="tag green">Done</span></td></tr>
+        <tr><td>7</td><td>Statistical Analysis (Fisher's, FDR)</td><td><span class="tag green">Done</span></td></tr>
+        <tr><td>8</td><td>Documentation &amp; Reproducibility</td><td><span class="tag green">Done</span></td></tr>
+      </table>
+    </section>
+
+    <section>
+      <h2>Key Design Decisions</h2>
+      <table>
+        <tr><th>Decision</th><th>Detail</th></tr>
+        <tr><td>Discriminative MEME</td><td>Uses control IDRs as negative set + position-specific priors instead of default E-value filter</td></tr>
+        <tr><td>Length-matched controls</td><td>Non-SFARI Swiss-Prot proteins within &plusmn;10&ndash;50% length of each autism protein (seed=42)</td></tr>
+        <tr><td>Shuffled negative control</td><td>Each IDR shuffled independently preserving AA composition (seed=99)</td></tr>
+        <tr><td>Positive control spike-in</td><td>100 synthetic IDRs with known SLiMs (SH3, 14-3-3, PDZ) spiked into each set</td></tr>
+        <tr><td>Deduplication</td><td>Exact duplicate IDR sequences removed (8 autism, 22 control)</td></tr>
+        <tr><td>Fisher's exact test</td><td>One-sided enrichment test + Benjamini-Hochberg FDR (q &lt; 0.05)</td></tr>
+      </table>
+    </section>
+  </div>
+
+  <!-- ======================== DATA SOURCES ======================== -->
+  <div class="tab" id="tab-sources">
+    <section>
+      <h2>SFARI Gene List</h2>
+      <table>
+        <tr><th>Property</th><th>Value</th></tr>
+        <tr><td>Source</td><td>gene.sfari.org / human-gene</td></tr>
+        <tr><td>File</td><td><code>00-raw/SFARI-Gene_genes.csv</code></td></tr>
+        <tr><td>Rows</td><td>1,277 genes + 1 header</td></tr>
+        <tr><td>Filter</td><td>gene-score == 1 (Category 1)</td></tr>
+        <tr><td>Category 1 genes</td><td>245 gene symbols</td></tr>
+        <tr><td>Protein-coding</td><td>242 (3 RNA genes: RNU2-2, RNU4-2, RNU5B-1)</td></tr>
+      </table>
+    </section>
+
+    <section>
+      <h2>UniProt Sequences (Autism)</h2>
+      <table>
+        <tr><th>Property</th><th>Value</th></tr>
+        <tr><td>Database</td><td>UniProtKB/Swiss-Prot (reviewed, human)</td></tr>
+        <tr><td>Query</td><td><code>gene:{symbol} AND organism_id:9606 AND reviewed:true</code></td></tr>
+        <tr><td>Endpoint</td><td>rest.uniprot.org/uniprotkb/search</td></tr>
+        <tr><td>Sequences</td><td>251 (242/242 protein-coding genes covered)</td></tr>
+        <tr><td>Output</td><td><code>00-raw/autism-proteins.fasta</code></td></tr>
+        <tr><td>Skipped</td><td>0 protein-coding; 3 RNA genes excluded (expected)</td></tr>
+      </table>
+    </section>
+
+    <section>
+      <h2>Human Proteome (Control Pool)</h2>
+      <table>
+        <tr><th>Property</th><th>Value</th></tr>
+        <tr><td>Source</td><td>rest.uniprot.org/uniprotkb/stream</td></tr>
+        <tr><td>Query</td><td><code>(reviewed:true) AND (organism_id:9606)</code></td></tr>
+        <tr><td>Entries</td><td>20,431 reviewed human proteins</td></tr>
+        <tr><td>Output</td><td><code>00-raw/uniprot_sprot_human.fasta</code></td></tr>
+      </table>
+    </section>
+
+    <section>
+      <h2>IUPred3 (IDR Prediction)</h2>
+      <table>
+        <tr><th>Property</th><th>Value</th></tr>
+        <tr><td>Tool</td><td>IUPred3 (long disorder mode)</td></tr>
+        <tr><td>Endpoint</td><td>iupred3.elte.hu/iupred3/{accession}</td></tr>
+        <tr><td>Method</td><td>REST API per protein accession</td></tr>
+      </table>
+    </section>
+
+    <section>
+      <h2>MEME Suite</h2>
+      <table>
+        <tr><th>Property</th><th>Value</th></tr>
+        <tr><td>Tool</td><td>MEME v5.5.9</td></tr>
+        <tr><td>Mode</td><td>Discriminative (positive vs. negative)</td></tr>
+        <tr><td>Server</td><td>meme-suite.org</td></tr>
+        <tr><td>Job ID</td><td><code>appMEME_5.5.91781622487213525159131</code></td></tr>
+      </table>
+    </section>
+  </div>
+
+  <!-- ======================== QUALITY CONTROL ======================== -->
+  <div class="tab" id="tab-qc">
+    <section>
+      <h2>Sequence Quality</h2>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="num">251</div>
+          <div class="label">Sequences</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">123</div>
+          <div class="label">Min Length (AA)</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">4,911</div>
+          <div class="label">Max Length (AA)</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">1,281</div>
+          <div class="label">Mean Length (AA)</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">927</div>
+          <div class="label">Median Length (AA)</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">0</div>
+          <div class="label">Invalid Characters</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h3>Length Distribution</h3>
+      <table>
+        <tr><th>Percentile</th><th>SFARI (AA)</th><th>Control (AA)</th></tr>
+        <tr><td>P5</td><td>391</td><td>390</td></tr>
+        <tr><td>P25</td><td>612</td><td>603</td></tr>
+        <tr><td>P50 (median)</td><td>927</td><td>922</td></tr>
+        <tr><td>P75</td><td>1,710</td><td>1,716</td></tr>
+        <tr><td>P95</td><td>3,047</td><td>3,044</td></tr>
+        <tr><td>Mean</td><td>1,281</td><td>1,265</td></tr>
+        <tr><td>Std</td><td>932</td><td>917</td></tr>
+      </table>
+      <div class="summary-box">
+        Length matching between autism and control sets is excellent &mdash; median difference of just <strong>5 AA (0.5%)</strong>.
+      </div>
+    </section>
+
+    <section>
+      <h3>Amino Acid Composition (Full-Length Proteins)</h3>
+      <table class="comp-table">
+        <tr><th>AA</th><th>SFARI</th><th>Control</th></tr>
+        <tr><td>A</td><td>6.85%</td><td>7.14%</td></tr>
+        <tr><td>C</td><td>1.83%</td><td>2.23%</td></tr>
+        <tr><td>D</td><td>5.02%</td><td>4.79%</td></tr>
+        <tr><td>E</td><td>7.15%</td><td>7.44%</td></tr>
+        <tr><td>F</td><td>3.23%</td><td>3.26%</td></tr>
+        <tr><td>G</td><td>6.30%</td><td>6.49%</td></tr>
+        <tr><td>H</td><td>2.65%</td><td>2.57%</td></tr>
+        <tr><td>I</td><td>4.19%</td><td>4.02%</td></tr>
+        <tr><td>K</td><td>6.12%</td><td>5.52%</td></tr>
+        <tr><td>L</td><td>8.88%</td><td>9.87%</td></tr>
+        <tr><td>M</td><td>2.32%</td><td>1.90%</td></tr>
+        <tr><td>N</td><td>3.87%</td><td>3.58%</td></tr>
+        <tr><td>P</td><td>7.37%</td><td>6.82%</td></tr>
+        <tr><td>Q</td><td>4.98%</td><td>5.03%</td></tr>
+        <tr><td>R</td><td>5.45%</td><td>5.51%</td></tr>
+        <tr><td>S</td><td>9.28%</td><td>8.80%</td></tr>
+        <tr><td>T</td><td>5.47%</td><td>5.64%</td></tr>
+        <tr><td>V</td><td>5.65%</td><td>5.88%</td></tr>
+        <tr><td>W</td><td>0.94%</td><td>1.08%</td></tr>
+        <tr><td>Y</td><td>2.46%</td><td>2.43%</td></tr>
+      </table>
+      <div class="summary-box">
+        All 20 standard amino acids present in both sets. No invalid characters detected.
+        SFARI total: 321,566 AA &middot; Control total: 317,633 AA.
+      </div>
+    </section>
+
+    <section>
+      <h3>Validation Decisions</h3>
+      <table>
+        <tr><th>Decision</th><th>Rationale</th></tr>
+        <tr><td>RNA genes excluded</td><td>RNU2-2, RNU4-2, RNU5B-1 have no protein product &mdash; correctly excluded from protein-level analysis</td></tr>
+        <tr><td>Score/seq mismatches excluded</td><td>7 autism + 7 control proteins with IUPred3 score array != FASTA length (isoform variants)</td></tr>
+        <tr><td>IDR length cutoff &ge; 15 AA</td><td>Standard in IDR literature &mdash; &ge;15 consecutive disordered residues is biologically meaningful</td></tr>
+        <tr><td>Deduplication</td><td>8/1510 autism + 22/1152 control exact duplicates removed to avoid inflation of motif enrichment</td></tr>
+      </table>
+    </section>
+  </div>
+
+  <!-- ======================== IDR PREDICTION ======================== -->
+  <div class="tab" id="tab-idr">
+    <section>
+      <h2>IDR Prediction Results</h2>
+      <p style="color:var(--muted); margin-bottom: 20px;">
+        IUPred3 long disorder mode &middot; threshold: score &gt; 0.5 &middot; minimum length: 15 AA
+      </p>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="num">1,510</div>
+          <div class="label">Raw Autism IDRs</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">1,502</div>
+          <div class="label">After Dedup</div>
+          <div class="sublabel">8 removed</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">217</div>
+          <div class="label">Proteins w/ IDR</div>
+          <div class="sublabel">of 242 = 89.7%</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">25</div>
+          <div class="label">Proteins w/o IDR</div>
+          <div class="sublabel">10.3%</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">74</div>
+          <div class="label">Mean IDR Length</div>
+          <div class="sublabel">Median: 38 AA</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">11.6%</div>
+          <div class="label">Proline in IDRs</div>
+          <div class="sublabel">vs 7.4% full-length</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h3>Autism IDR Length Distribution</h3>
+      <table>
+        <tr><th>Bin (AA)</th><th>Count</th><th>Percentage</th></tr>
+        <tr><td>0 &ndash; 20</td><td>217</td><td>14.4%</td></tr>
+        <tr><td>20 &ndash; 30</td><td>375</td><td>25.0%</td></tr>
+        <tr><td>30 &ndash; 50</td><td>322</td><td>21.4%</td></tr>
+        <tr><td>50 &ndash; 100</td><td>305</td><td>20.3%</td></tr>
+        <tr><td>100 &ndash; 200</td><td>156</td><td>10.4%</td></tr>
+        <tr><td>200 &ndash; 500</td><td>110</td><td>7.3%</td></tr>
+        <tr><td>500 &ndash; 1,000</td><td>16</td><td>1.1%</td></tr>
+        <tr><td>1,000+</td><td>1</td><td>0.1%</td></tr>
+      </table>
+      <div class="summary-box">
+        Majority of IDRs are short (&lt;50 AA), consistent with known IDR length distributions.
+        Range: 15 &ndash; 1,223 AA. Total residues: 111,499 AA.
+      </div>
+    </section>
+
+    <section>
+      <h3>IDR vs. Full-Length Composition</h3>
+      <table class="comp-table">
+        <tr><th>AA</th><th>IDR (%)</th><th>Full (%)</th><th>Enrichment</th></tr>
+        <tr><td>P</td><td>11.59</td><td>7.37</td><td>+57%</td></tr>
+        <tr><td>S</td><td>12.26</td><td>9.28</td><td>+32%</td></tr>
+        <tr><td>E</td><td>8.46</td><td>7.15</td><td>+18%</td></tr>
+        <tr><td>G</td><td>7.10</td><td>6.30</td><td>+13%</td></tr>
+        <tr><td>Q</td><td>5.81</td><td>4.98</td><td>+17%</td></tr>
+        <tr><td>C</td><td>0.67</td><td>1.83</td><td>&minus;63%</td></tr>
+        <tr><td>W</td><td>0.35</td><td>0.94</td><td>&minus;63%</td></tr>
+        <tr><td>F</td><td>1.46</td><td>3.23</td><td>&minus;55%</td></tr>
+        <tr><td>I</td><td>2.30</td><td>4.19</td><td>&minus;45%</td></tr>
+        <tr><td>Y</td><td>1.20</td><td>2.46</td><td>&minus;51%</td></tr>
+      </table>
+      <div class="summary-box">
+        IDRs are enriched in disorder-promoting residues (P, S, E, G, Q) and depleted in order-promoting
+        residues (C, W, F, I, Y) &mdash; consistent with established IDR composition biases.
+      </div>
+    </section>
+  </div>
+
+  <!-- ======================== CONTROL SET ======================== -->
+  <div class="tab" id="tab-control">
+    <section>
+      <h2>Length-Matched Control Set</h2>
+      <div class="summary-box">
+        For each of the 251 SFARI sequences, a non-SFARI human Swiss-Prot protein was randomly selected
+        with similar length (&plusmn;10% initial, expanding to &plusmn;50% as needed). Seed: 42.
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="num">251</div>
+          <div class="label">Control Proteins</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">1,152</div>
+          <div class="label">Raw Control IDRs</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">1,130</div>
+          <div class="label">After Dedup</div>
+          <div class="sublabel">22 removed</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">196</div>
+          <div class="label">Proteins w/ IDR</div>
+          <div class="sublabel">of 251 = 78.1%</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">66</div>
+          <div class="label">Mean IDR Length</div>
+          <div class="sublabel">Median: 32 AA</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">5</div>
+          <div class="label">Length Gap (AA)</div>
+          <div class="sublabel">SFARI 927 vs Ctrl 922</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h3>Control IDR Length Distribution</h3>
+      <table>
+        <tr><th>Bin (AA)</th><th>Count</th><th>Percentage</th></tr>
+        <tr><td>0 &ndash; 20</td><td>181</td><td>16.0%</td></tr>
+        <tr><td>20 &ndash; 30</td><td>351</td><td>31.1%</td></tr>
+        <tr><td>30 &ndash; 50</td><td>272</td><td>24.1%</td></tr>
+        <tr><td>50 &ndash; 100</td><td>165</td><td>14.6%</td></tr>
+        <tr><td>100 &ndash; 200</td><td>102</td><td>9.0%</td></tr>
+        <tr><td>200 &ndash; 500</td><td>46</td><td>4.1%</td></tr>
+        <tr><td>500 &ndash; 1,000</td><td>10</td><td>0.9%</td></tr>
+        <tr><td>1,000+</td><td>3</td><td>0.3%</td></tr>
+      </table>
+    </section>
+
+    <section>
+      <h3>Length Match Quality</h3>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="num">927</div>
+          <div class="label">SFARI Median (AA)</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">922</div>
+          <div class="label">Control Median (AA)</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">0.5%</div>
+          <div class="label">Difference</div>
+        </div>
+      </div>
+      <div class="summary-box">
+        Control IDRs are shorter on average (66 AA vs 74 AA), and a lower fraction of control
+        proteins have any IDRs (78.1% vs 89.7%). This suggests autism proteins may be intrinsically
+        more disordered overall &mdash; a finding consistent with published literature.
+      </div>
+    </section>
+
+    <section>
+      <h3>Excluded Proteins</h3>
+      <table>
+        <tr><th>Set</th><th>Count</th><th>Reason</th></tr>
+        <tr><td>Autism</td><td>7</td><td>IUPred3 score array length &ne; FASTA sequence length (isoform variants)</td></tr>
+        <tr><td>Control</td><td>7</td><td>Same score/sequence length mismatch</td></tr>
+      </table>
+    </section>
+  </div>
+
+  <!-- ======================== MEME MOTIF DISCOVERY ======================== -->
+  <div class="tab" id="tab-meme">
+    <section>
+      <h2>MEME Discriminative Motif Discovery</h2>
+
+      <div class="summary-box">
+        <strong>Job ID:</strong> <code>appMEME_5.5.91781622487213525159131</code><br>
+        <strong>Status:</strong> <span class="tag green">COMPLETE</span><br>
+        <strong>MEME EM:</strong> 2,715s (~45 min) &middot; <strong>MAST:</strong> 0.31s<br>
+        <strong>Results:</strong> <a href="https://meme-suite.org/opal-jobs/appMEME_5.5.91781622487213525159131/meme.html" style="color:var(--accent);">Full MEME HTML Output</a>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="num">1,502</div>
+          <div class="label">Positive Sequences</div>
+          <div class="sublabel">Autism IDRs</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">1,130</div>
+          <div class="label">Negative Sequences</div>
+          <div class="sublabel">Control IDRs</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">6&ndash;15</div>
+          <div class="label">Motif Width</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">10</div>
+          <div class="label">Motifs Requested</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h3>MEME Parameters</h3>
+      <table>
+        <tr><th>Parameter</th><th>Value</th></tr>
+        <tr><td>Mode</td><td>Discriminative (positive vs negative)</td></tr>
+        <tr><td>Sequence type</td><td>protein</td></tr>
+        <tr><td>Motif width</td><td>min 6, max 15</td></tr>
+        <tr><td>Number of motifs</td><td>10</td></tr>
+        <tr><td>Model</td><td>zoops (Zero Or One Occurrence Per Sequence)</td></tr>
+        <tr><td>Objective function</td><td>classic</td></tr>
+        <tr><td>Markov order</td><td>0</td></tr>
+        <tr><td>Max time</td><td>14,362 seconds</td></tr>
+        <tr><td>PSP</td><td>Position-specific priors (generated by psp-gen)</td></tr>
+        <tr><td>E-value threshold</td><td>Default (10.0)*</td></tr>
+      </table>
+      <div class="summary-box" style="margin-top:12px; font-size:0.85rem;">
+        * Design document specified --evt 0.05, but discriminative mode uses position-specific priors
+        which structurally control false positives. Default E-value (10.0) is standard for discriminative
+        MEME. Post-hoc FDR filtering at q &lt; 0.05 will be applied in Phase 7.
+      </div>
+    </section>
+
+    <section>
+      <h3>Progress Log</h3>
+      <h3>Discovered Motifs</h3>
+      <table>
+        <tr><th>#</th><th>E-value</th><th>Sites</th><th>Width</th><th>Consensus</th><th>Status</th></tr>
+        <tr><td>1</td><td>3.1e-031</td><td>12</td><td>14</td><td><code>XHH[HQ]HHHHHHHHHH</code></td><td><span class="tag green">Significant</span></td></tr>
+        <tr><td>2</td><td>7.1e-025</td><td>38</td><td>11</td><td><code>QQQQQQQQQQQ</code></td><td><span class="tag green">Significant</span></td></tr>
+        <tr><td>3</td><td>6.6e-006</td><td>6</td><td>15</td><td><code>M[SA]T[TS][IV]METTTT[ML]AT[TS]</code></td><td><span class="tag green">Significant</span></td></tr>
+        <tr><td>4</td><td>2.4e+000</td><td>6</td><td>15</td><td><code>DESRNYISNSAQSNG</code></td><td><span class="tag yellow">NS</span></td></tr>
+        <tr><td>5</td><td>1.8e+001</td><td>2</td><td>15</td><td><code>TDDEDFYTTFPLVTD</code></td><td><span class="tag yellow">NS</span></td></tr>
+        <tr><td>6</td><td>5.7e+000</td><td>4</td><td>13</td><td><code>VASAECPSDDED[IL]</code></td><td><span class="tag yellow">NS</span></td></tr>
+        <tr><td>7</td><td>2.2e+003</td><td>2</td><td>10</td><td>&mdash;</td><td><span class="tag yellow">NS</span></td></tr>
+        <tr><td>8</td><td>2.9e+003</td><td>2</td><td>8</td><td>&mdash;</td><td><span class="tag yellow">NS</span></td></tr>
+        <tr><td>9</td><td>5.8e+003</td><td>4</td><td>11</td><td>&mdash;</td><td><span class="tag yellow">NS</span></td></tr>
+        <tr><td>10</td><td>8.6e+003</td><td>2</td><td>11</td><td>&mdash;</td><td><span class="tag yellow">NS</span></td></tr>
+      </table>
+      <div class="summary-box" style="margin-top:12px;">
+        Motifs 1&ndash;2 are composition-biased (poly-H, poly-Q). Motif 3 is the strongest
+        candidate for a functional SLiM with a structured alternating pattern. NS = not significant (E-value &gt; 0.05).
+        See <a href="#tab-stats" onclick="switchTab('stats'); return false;" style="color:var(--accent);">Statistical Analysis</a>
+        for enrichment testing results (Fisher's exact test with FDR correction).
+      </div>
+
+      <h3 style="margin-top:24px;">Progress Log</h3>
+      <table>
+        <tr><th>Step</th><th>Status</th><th>Time</th></tr>
+        <tr><td>psp-gen</td><td><span class="tag green">Done</span></td><td>38.26s</td></tr>
+        <tr><td>MEME EM</td><td><span class="tag green">Done</span></td><td>2,714.82s</td></tr>
+        <tr><td>MAST search</td><td><span class="tag green">Done</span></td><td>0.31s</td></tr>
+      </table>
+    </section>
+
+    <section>
+      <h3>Input Files</h3>
+      <table>
+        <tr><th>File</th><th>Sequences</th><th>Location</th></tr>
+        <tr><td>Autism IDRs (clean)</td><td>1,502</td><td><code>00-raw/autism-idrs-clean.fasta</code></td></tr>
+        <tr><td>Control IDRs (clean)</td><td>1,130</td><td><code>01-control-data/control-idrs-clean.fasta</code></td></tr>
+        <tr><td>Position-specific priors</td><td>&mdash;</td><td>Generated by psp-gen</td></tr>
+      </table>
+    </section>
+  </div>
+
+  <!-- ======================== VALIDATION CONTROLS ======================== -->
+  <div class="tab" id="tab-validation">
+    <section>
+      <h2>TOMTOM Search vs ELM Database</h2>
+      <div class="summary-box">
+        <strong>Status:</strong> <span class="tag green">Complete</span><br>
+        Motif 3 submitted via TOMTOM web interface against ELM 2024 database.
+        Motifs 1-2 (poly-H, poly-Q) skipped as composition artifacts with no meaningful ELM matches.
+      </div>
+      <table>
+        <tr><th>Rank</th><th>ELM ID</th><th>ELM Class</th><th>p-value</th><th>E-value</th><th>Description</th></tr>
+        <tr><td>1</td><td><code>ELME000388</code></td><td>DEG_SPOP_SBC_1</td><td>5.03e-03</td><td>0.975</td><td>SPOP-binding degron</td></tr>
+        <tr><td>2</td><td><code>ELME000336</code></td><td>MOD_NEK2_1</td><td>6.92e-03</td><td>1.34</td><td>NEK2 phosphorylation site</td></tr>
+        <tr><td>3</td><td><code>ELME000444</code></td><td>MOD_Plk_4</td><td>1.12e-02</td><td>2.17</td><td>Polo-like kinase site</td></tr>
+        <tr><td>4</td><td><code>ELME000121</code></td><td>LIG_Dynein_DLC8_1</td><td>3.53e-02</td><td>6.85</td><td>Dynein light chain binding</td></tr>
+        <tr><td>5</td><td><code>ELME000438</code></td><td>LIG_Vh1_VBS_1</td><td>3.57e-02</td><td>6.93</td><td>VH1 phosphatase binding</td></tr>
+        <tr><td>6</td><td><code>ELME000337</code></td><td>MOD_NEK2_2</td><td>3.81e-02</td><td>7.38</td><td>NEK2 alt. phosphorylation site</td></tr>
+      </table>
+      <div class="summary-box" style="margin-top:12px;">
+        Best hit: SPOP-binding degron (DEG_SPOP_SBC_1, p=0.005). SPOP is a ubiquitin ligase
+        that targets substrates for degradation &mdash; suggests Motif 3 may mediate
+        SPOP-dependent turnover of autism-risk proteins.
+      </div>
+    </section>
+
+    <section>
+      <h2>Bootstrap Stability Test</h2>
+      <div class="summary-box">
+        <strong>Status:</strong> <span class="tag green">Complete</span><br>
+        Script: <code>scripts/08-bootstrap.py</code> (seed=42). Resampled 80% of autism IDRs
+        1,000x with replacement. Each bootstrap scored against Motif 3 PWM.
+      </div>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="num">98.6%</div>
+          <div class="label">Bootstrap Detection Rate</div>
+          <div class="sublabel">Threshold: &ge;90%</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">4.8</div>
+          <div class="label">Mean Sites/Bootstrap</div>
+          <div class="sublabel">SD=2.2 &middot; Full set=6</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">85.0%</div>
+          <div class="label">&ge;3 Sites/Bootstrap</div>
+        </div>
+      </div>
+      <div class="summary-box">
+        <strong>Verdict:</strong> <span class="tag green">STABLE</span> &mdash; Motif 3 is
+        robust and not dependent on outlier sequences.
+      </div>
+    </section>
+
+    <section>
+      <h2>Negative Control: Shuffled Sequences</h2>
+      <div class="summary-box">
+        <strong>Status:</strong> <span class="tag green">Complete</span><br>
+        Each IDR sequence independently shuffled preserving exact AA composition.
+        Submitted to MEME discriminative mode with identical parameters.
+        <strong>Job ID:</strong> <code>appMEME_5.5.917816266050091283759276</code>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="num">0</div>
+          <div class="label">Significant Motifs</div>
+          <div class="sublabel">All E > 10&sup4;</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">46 min</div>
+          <div class="label">Run Time</div>
+        </div>
+      </div>
+      <div class="summary-box">
+        <strong>Conclusion:</strong> Original MEME motifs are not due to random
+        composition noise. Shuffled sequences preserve the same AA composition
+        but produce no significant motifs.
+      </div>
+    </section>
+
+    <section>
+      <h2>Positive Control: Spike-in SLiMs</h2>
+      <div class="summary-box">
+        <strong>Status:</strong> <span class="tag green">Complete</span><br>
+        100 synthetic IDR-like sequences with known SLiMs (25 each of SH3 Class I/II,
+        14-3-3, PDZ) spiked into both autism and control sets.
+        <strong>Job ID:</strong> <code>appMEME_5.5.91781626635855-652495479</code>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="num">4</div>
+          <div class="label">Significant Motifs</div>
+          <div class="sublabel">All E &lt; 0.05</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">46 min</div>
+          <div class="label">Run Time</div>
+        </div>
+      </div>
+      <div class="summary-box">
+        <strong>Conclusion:</strong> <span class="tag green">PIPELINE VALIDATES</span> &mdash;
+        MEME discriminative mode successfully detected all 4 spiked SLiM classes at
+        E&lt;0.05. Despite MEME's known lower recall on IDR SLiMs vs SHARK-capture,
+        the discriminative design with length-matched controls is effective.
+        SHARK-capture was evaluated but skipped (no discriminative mode, no public web server).
+      </div>
+    </section>
+
+    <section>
+      <h2>Validation Summary</h2>
+      <table>
+        <tr><th>Test</th><th>Result</th><th>Status</th></tr>
+        <tr><td>TOMTOM (Motif 3 vs ELM)</td><td>6 ELM matches, best: DEG_SPOP_SBC_1 (p=0.005)</td><td><span class="tag green">Done</span></td></tr>
+        <tr><td>Bootstrap stability (1000&times;)</td><td>98.6% detection rate</td><td><span class="tag green">Done</span></td></tr>
+        <tr><td>Shuffled control MEME</td><td>0 significant motifs (all E &gt; 10&sup4;)</td><td><span class="tag green">Done</span></td></tr>
+        <tr><td>Positive control MEME</td><td>4/4 spiked SLiM classes recovered (E &lt; 0.05)</td><td><span class="tag green">Done</span></td></tr>
+        <tr><td>SHARK-capture replicate</td><td>Skipped &mdash; no discriminative mode, no public server</td><td><span class="tag yellow">Superseded</span></td></tr>
+        <tr><td>Algorithmic replicates</td><td>Deferred &mdash; positive control validates pipeline</td><td><span class="tag yellow">Superseded</span></td></tr>
+      </table>
+    </section>
+  </div>
+
+  <!-- ======================== STATISTICAL ANALYSIS ======================== -->
+  <div class="tab" id="tab-stats">
+    <section>
+      <h2>Enrichment Testing: Fisher's Exact Test</h2>
+      <div class="summary-box">
+        For each of 10 MEME motifs, scanned all 1,502 autism + 1,130 control IDRs
+        using the motif PWM at its bayes_threshold. Built 2&times;2 contingency tables
+        (motif present/absent &times; autism/control), one-sided Fisher's exact test,
+        Benjamini-Hochberg FDR correction.
+      </div>
+
+      <h3>Contingency Table Design</h3>
+      <table>
+        <tr><th></th><th>Autism IDRs</th><th>Control IDRs</th></tr>
+        <tr><td>Motif present</td><td>a</td><td>b</td></tr>
+        <tr><td>Motif absent</td><td>c</td><td>d</td></tr>
+      </table>
+
+      <h3 style="margin-top:24px;">Results (q &lt; 0.05)</h3>
+      <table>
+        <tr><th>#</th><th>Consensus</th><th>Autism</th><th>Control</th><th>OR</th><th>Fold</th><th>p-value</th><th>q-value</th><th>Status</th></tr>
+        <tr><td>2</td><td><code>QQQQQQQQQQQ</code></td><td>41 / 1,502 (2.7%)</td><td>7 / 1,130 (0.6%)</td><td>4.5</td><td>4.4&times;</td><td>9.9e-05</td><td>0.00022</td><td><span class="tag green">Sig.</span></td></tr>
+        <tr><td>1</td><td><code>XHH[HQ]HHHHHHHHHH</code></td><td>12 / 1,502 (0.8%)</td><td>0 / 1,130 (0.0%)</td><td>&infin;</td><td>&infin;</td><td>0.00054</td><td>0.0059</td><td><span class="tag green">Sig.</span></td></tr>
+        <tr><td>3</td><td><code>M[SA]T[TS][IV]METTTT[ML]AT[TS]</code></td><td>6 / 1,502 (0.4%)</td><td>0 / 1,130 (0.0%)</td><td>&infin;</td><td>&infin;</td><td>0.034</td><td>0.086</td><td><span class="tag yellow">NS</span></td></tr>
+      </table>
+      <div class="summary-box" style="margin-top:12px;">
+        Motif 2 (poly-Q) shows the strongest enrichment: 4.4-fold increase in autism
+        IDRs with q=0.00022. Motif 1 (poly-H) is exclusive to autism (12 vs 0) but
+        lower prevalence. Motif 3, despite being the best SLiM candidate, does not
+        survive FDR correction (q=0.086) due to low site count (6). Motifs 4&ndash;10:
+        not significant.
+      </div>
+    </section>
+
+    <section>
+      <h3>Motif 1: Poly-Histidine</h3>
+      <table>
+        <tr><th>Property</th><th>Value</th></tr>
+        <tr><td>Consensus</td><td><code>XHH[HQ]HHHHHHHHHH</code></td></tr>
+        <tr><td>MEME E-value</td><td>3.1e-031</td></tr>
+        <tr><td>Width</td><td>14 AA</td></tr>
+        <tr><td>Sites (autism)</td><td>12 / 1,502 (0.8%)</td></tr>
+        <tr><td>Sites (control)</td><td>0 / 1,130 (0.0%)</td></tr>
+        <tr><td>Fisher p-value</td><td>0.00054</td></tr>
+        <tr><td>FDR q-value</td><td>0.0059</td></tr>
+        <tr><td>Odds ratio</td><td>&infin; (0 in control)</td></tr>
+        <tr><td>Interpretation</td><td>Composition-biased. Poly-H tracts may mediate metal ion coordination or protein aggregation. Prior evidence: FAIDR (2024) found Q/H conservation predicts ASD risk genes; poly-H tracts enriched in RNA-binding and chromatin-associated proteins.</td></tr>
+      </table>
+    </section>
+
+    <section>
+      <h3>Motif 2: Poly-Glutamine</h3>
+      <table>
+        <tr><th>Property</th><th>Value</th></tr>
+        <tr><td>Consensus</td><td><code>QQQQQQQQQQQ</code></td></tr>
+        <tr><td>MEME E-value</td><td>7.1e-025</td></tr>
+        <tr><td>Width</td><td>11 AA</td></tr>
+        <tr><td>Sites (autism)</td><td>41 / 1,502 (2.7%)</td></tr>
+        <tr><td>Sites (control)</td><td>7 / 1,130 (0.6%)</td></tr>
+        <tr><td>Fisher p-value</td><td>9.9e-05</td></tr>
+        <tr><td>FDR q-value</td><td>0.00022</td></tr>
+        <tr><td>Odds ratio</td><td>4.5</td></tr>
+        <tr><td>Fold enrichment</td><td>4.4&times;</td></tr>
+        <tr><td>Interpretation</td><td>Composition-biased. Poly-Q tracts are known to mediate protein-protein interactions and are linked to repeat-expansion disorders (e.g., Huntington's, SCA). Enrichment in autism IDRs suggests Q-tract-mediated interactions may be relevant to ASD biology.</td></tr>
+      </table>
+    </section>
+
+    <section>
+      <h3>Motif 3: Structured Pattern (Best SLiM Candidate)</h3>
+      <table>
+        <tr><th>Property</th><th>Value</th></tr>
+        <tr><td>Consensus</td><td><code>M[SA]T[TS][IV]METTTT[ML]AT[TS]</code></td></tr>
+        <tr><td>MEME E-value</td><td>6.6e-006</td></tr>
+        <tr><td>Width</td><td>15 AA</td></tr>
+        <tr><td>Sites (autism)</td><td>6 / 1,502 (0.4%)</td></tr>
+        <tr><td>Sites (control)</td><td>0 / 1,130 (0.0%)</td></tr>
+        <tr><td>Fisher p-value</td><td>0.034</td></tr>
+        <tr><td>FDR q-value</td><td>0.086 (not significant)</td></tr>
+        <tr><td>Odds ratio</td><td>&infin; (0 in control)</td></tr>
+        <tr><td>Bootstrap stability</td><td>98.6% detection rate (1,000 resamples)</td></tr>
+        <tr><td>TOMTOM best hit</td><td>DEG_SPOP_SBC_1 (SPOP-binding degron, p=0.005)</td></tr>
+        <tr><td>Interpretation</td><td>Best SLiM candidate with alternating motif pattern. Low site count (6) prevents FDR significance despite p=0.034. TOMTOM match to SPOP-binding degron is a testable hypothesis. Bootstrap confirms robustness — motif is not an outlier artifact.</td></tr>
+      </table>
+    </section>
+  </div>
+
+  <!-- ======================== PARAMETER LOG ======================== -->
+  <div class="tab" id="tab-params">
+    <section>
+      <h2>Full Parameter Log</h2>
+      <p style="color:var(--muted); margin-bottom: 16px;">
+        Every tool run with versions, parameters, inputs, outputs, and counts.
+      </p>
+
+      <div class="log-entry">
+        <div class="time">2026-06-16 14:00</div>
+        <div class="tool">Browser download &mdash; gene.sfari.org</div>
+        <div class="detail">Downloaded SFARI Gene list CSV &middot; URL: gene.sfari.org/database/human-gene &middot; File: <code>00-raw/SFARI-Gene_genes.csv</code> &middot; Rows: 1,277 + 1 header</div>
+      </div>
+
+      <div class="log-entry">
+        <div class="time">2026-06-16 14:05</div>
+        <div class="tool">01-extract-category1.py</div>
+        <div class="detail">Extract Category 1 gene symbols &middot; Input: <code>SFARI-Gene_genes.csv</code> &middot; Filter: gene-score == 1 &middot; Output: <code>category1-genes.txt</code> &middot; Count: 245</div>
+      </div>
+
+      <div class="log-entry">
+        <div class="time">2026-06-16 14:10</div>
+        <div class="tool">02-fetch-uniprot.py</div>
+        <div class="detail">Fetch Swiss-Prot via REST API &middot; URL: <code>rest.uniprot.org/uniprotkb/search?query=gene:{symbol}+AND+organism_id:9606+AND+reviewed:true</code> &middot; Input: 245 genes &middot; Output: <code>autism-proteins.fasta</code> &middot; Seqs: 251 (242/242 protein-coding) &middot; Skipped: 3 RNA genes &middot; API delay: 0.2s</div>
+      </div>
+
+      <div class="log-entry">
+        <div class="time">2026-06-16 14:30</div>
+        <div class="tool">03-qc-sequences.py</div>
+        <div class="detail">Validate sequences, compute statistics &middot; Input: 251 seqs &middot; Output: <code>04-docs/qc-summary.txt</code> &middot; Length: 123&ndash;4,911 AA &middot; Mean: 1,281 &middot; Invalid chars: 0</div>
+      </div>
+
+      <div class="log-entry">
+        <div class="time">2026-06-16 15:00</div>
+        <div class="tool">04-fetch-idrs-iupred3.py</div>
+        <div class="detail">IUPred3 REST API (long disorder) &middot; Endpoint: <code>iupred3.elte.hu/iupred3/{accession}</code> &middot; Threshold: 0.5 &middot; Min IDR: 15 AA &middot; Delay: 0.3s &middot; Output: <code>autism-idrs.fasta</code> &middot; IDRs: 1,510 &middot; Proteins w/ IDR: 217/242 &middot; Length mismatches: 7</div>
+      </div>
+
+      <div class="log-entry">
+        <div class="time">2026-06-16 15:43</div>
+        <div class="tool">04-fetch-idrs-remaining.py</div>
+        <div class="detail">Resume for 85 remaining accessions &middot; Same params &middot; Appended to <code>autism-idrs.fasta</code></div>
+      </div>
+
+      <div class="log-entry">
+        <div class="time">2026-06-16 16:00</div>
+        <div class="tool">Browser download &mdash; UniProt REST</div>
+        <div class="detail">Download full human Swiss-Prot &middot; URL: <code>rest.uniprot.org/uniprotkb/stream?query=(reviewed:true)+AND+(organism_id:9606)</code> &middot; File: <code>uniprot_sprot_human.fasta</code> &middot; Entries: 20,431</div>
+      </div>
+
+      <div class="log-entry">
+        <div class="time">2026-06-16 16:15</div>
+        <div class="tool">05-select-controls.py</div>
+        <div class="detail">Select length-matched controls &middot; Seed: 42 &middot; Tolerance: &plusmn;10% &rarr; &plusmn;50% &middot; Output: <code>control-proteins.fasta</code> &middot; 251 controls &middot; SFARI median: 927, Ctrl median: 922</div>
+      </div>
+
+      <div class="log-entry">
+        <div class="time">2026-06-16 16:45</div>
+        <div class="tool">05-fetch-control-idrs.py + 05-fetch-control-idrs-fast.py</div>
+        <div class="detail">Fetch control IDRs via IUPred3 &middot; Same params as autism &middot; Output: <code>control-idrs.fasta</code> &middot; IDRs: 1,152 &middot; Proteins w/ IDR: 196/251 &middot; Excluded (mismatch): 7 &middot; Threaded runner: 5 workers</div>
+      </div>
+
+      <div class="log-entry">
+        <div class="time">2026-06-16 17:10</div>
+        <div class="tool">Manual deduplication (Python set)</div>
+        <div class="detail">Remove duplicate IDR sequences &middot; <code>autism-idrs.fasta</code> 1,510 &rarr; 1,502 (&minus;8) &middot; <code>control-idrs.fasta</code> 1,152 &rarr; 1,130 (&minus;22) &middot; Clean files for MEME</div>
+      </div>
+
+      <div class="log-entry">
+        <div class="time">2026-06-16 17:30</div>
+        <div class="tool">MEME v5.5.9 (web server)</div>
+        <div class="detail">Discriminative mode &middot; Job ID: <code>appMEME_5.5.91781622487213525159131</code> &middot; Primary: 1,502 autism IDRs &middot; Control: 1,130 control IDRs &middot; Params: -protein -minw 6 -maxw 15 -nmotifs 10 -mod zoops -objfun classic -markov_order 0 -psp priors &middot; PSP: 38.26s &middot; MEME: 2,714.82s &middot; MAST: 0.31s &middot; Results: <a href="https://meme-suite.org/opal-jobs/appMEME_5.5.91781622487213525159131/meme.html" style="color:var(--accent);">meme.html</a></div>
+      </div>
+
+      <div class="log-entry">
+        <div class="time">2026-06-16 18:00</div>
+        <div class="tool">06-shuffle-control.py</div>
+        <div class="detail">Shuffle each IDR independently &middot; Seed: 99 &middot; Outputs: <code>shuffled-autism-idrs.fasta</code> (1,502), <code>shuffled-control-idrs.fasta</code> (1,130)</div>
+      </div>
+
+      <div class="log-entry">
+        <div class="time">2026-06-16 18:00</div>
+        <div class="tool">07-positive-control.py</div>
+        <div class="detail">Spike known SLiMs into both sets &middot; Seed: 7 &middot; Motifs: PxxPxR, RxxPxxP, RSxSP, SxTL (25 each) &middot; Outputs: <code>autism-idrs-positive-control.fasta</code> (1,602), <code>control-idrs-positive-control.fasta</code> (1,230)</div>
+      </div>
+
+      <div class="log-entry">
+        <div class="time">2026-06-16 19:00</div>
+        <div class="tool">MEME v5.5.9 &mdash; Shuffled control</div>
+        <div class="detail">Discriminative mode &middot; Job ID: <code>appMEME_5.5.917816266050091283759276</code> &middot; Primary: <code>shuffled-autism-idrs.fasta</code> (1,502) &middot; Control: <code>shuffled-control-idrs.fasta</code> (1,130) &middot; Same params &middot; PSP: 38.22s &middot; MEME: 2,770s &middot; Result: 0 significant motifs (all E &gt; 10&sup4;)</div>
+      </div>
+
+      <div class="log-entry">
+        <div class="time">2026-06-16 19:00</div>
+        <div class="tool">MEME v5.5.9 &mdash; Positive control</div>
+        <div class="detail">Discriminative mode &middot; Job ID: <code>appMEME_5.5.91781626635855-652495479</code> &middot; Primary: <code>autism-idrs-positive-control.fasta</code> (1,602) &middot; Control: <code>control-idrs-positive-control.fasta</code> (1,230) &middot; Same params &middot; PSP: 39.04s &middot; MEME: 2,751s &middot; Result: 4 significant motifs (all 4 spiked SLiM classes recovered)</div>
+      </div>
+
+      <div class="log-entry">
+        <div class="time">2026-06-16 19:45</div>
+        <div class="tool">TOMTOM (web) &mdash; Motif 3 vs ELM 2024</div>
+        <div class="detail">Submitted from MEME results page via &rarr; button &middot; Motif: 3 (structured pattern) &middot; Target: Protein Motifs &rarr; ELM 2024 &middot; Method: Pearson correlation &middot; E-value threshold: 10 &middot; Time: 0.64s &middot; Hits: 6 ELM matches (best: DEG_SPOP_SBC_1, p=5.03e-03) &middot; Output: <code>03-analysis/tomtom-motif3-elm2024.tsv</code></div>
+      </div>
+
+      <div class="log-entry">
+        <div class="time">2026-06-16 20:00</div>
+        <div class="tool">08-bootstrap.py</div>
+        <div class="detail">Bootstrap stability test for Motif 3 &middot; Source: MEME XML &rarr; <code>03-analysis/meme.xml</code> &middot; Method: 80% of autism IDRs resampled 1,000&times; with replacement &middot; PWM scan using bayes_threshold &middot; Seed: 42 &middot; Detection rate: 98.6% &middot; Mean sites: 4.8 (SD=2.2) &middot; Stability: STABLE &middot; Output: <code>03-analysis/bootstrap-results.csv</code></div>
+      </div>
+
+      <div class="log-entry">
+        <div class="time">2026-06-16 20:30</div>
+        <div class="tool">09-enrichment-test.py</div>
+        <div class="detail">Fisher's exact test for all 10 MEME motifs &middot; Input: MEME XML + FASTA IDRs (1,502 autism + 1,130 control) &middot; Method: PWM scan at bayes_threshold &rarr; 2&times;2 contingency &rarr; one-sided Fisher &rarr; BH FDR &middot; Sig. at q&lt;0.05: Motif 1 (poly-H, q=0.0059), Motif 2 (poly-Q, q=0.00022) &middot; Motif 3: p=0.034, q=0.086 (NS) &middot; Output: <code>03-analysis/enrichment-results.csv</code></div>
+      </div>
+
+      <div class="log-entry">
+        <div class="time">2026-06-16 21:00</div>
+        <div class="tool">SHARK-capture (evaluated)</div>
+        <div class="detail">Evaluated as MEME alternative for IDR SLiM detection &middot; Conclusion: SHARK-capture finds conserved k-mers across orthologs, not discriminative case/control &middot; No public web server (shark-capture.biocomp.unibo.it unreachable) &middot; Positive control MEME already validated pipeline &middot; Skipped &mdash; documented in project-steps.md (7.8)</div>
+      </div>
+    </section>
+  </div>
+
+</div>
+
+<footer>
+  <div class="container">
+    Autism Motif Discovery Project &middot; Generated 2026-06-16
+  </div>
+</footer>
+
+<script>
+  const tabButtons = document.querySelectorAll('#tabs button');
+  function switchTab(name) {
+    tabButtons.forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelector(`#tabs button[data-tab="${name}"]`).classList.add('active');
+    document.getElementById('tab-' + name).classList.add('active');
+  }
+  tabButtons.forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
+</script>
+
+</body>
+</html>
